@@ -1,271 +1,422 @@
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+const screens = Array.from(document.querySelectorAll(".screen"));
+const navButtons = Array.from(document.querySelectorAll("[data-nav]"));
+const toast = document.getElementById("toast");
+const connectionStatus = document.getElementById("connectionStatus");
 
-const scoreEl = document.getElementById("score");
-const bestEl = document.getElementById("best");
-const pauseBtn = document.getElementById("pause");
-const resetBtn = document.getElementById("reset");
+const playerCountInput = document.getElementById("playerCount");
+const playerCountValue = document.getElementById("playerCountValue");
+const categoryStrip = document.getElementById("categoryStrip");
+const categoryCards = Array.from(document.querySelectorAll(".category-card"));
+const roundTimeChips = Array.from(document.querySelectorAll("#roundTimeChips .chip"));
+const createRoomBtn = document.getElementById("createRoomBtn");
+const joinRoomBtn = document.getElementById("joinRoomBtn");
+const roomCodeInput = document.getElementById("roomCode");
+const revealWordBtn = document.getElementById("revealWordBtn");
+const readyBtn = document.getElementById("readyBtn");
+const secretWordEl = document.getElementById("secretWord");
+const clueProgress = document.getElementById("clueProgress");
+const clueTimer = document.getElementById("clueTimer");
+const clueInput = document.getElementById("clueInput");
+const clueList = document.getElementById("clueList");
+const emojiBar = document.getElementById("emojiBar");
+const sendClueBtn = document.getElementById("sendClueBtn");
+const chatForm = document.getElementById("chatForm");
+const chatInput = document.getElementById("chatInput");
+const chatList = document.getElementById("chatList");
+const voteGrid = document.getElementById("voteGrid");
+const voteStatus = document.getElementById("voteStatus");
+const showResultBtn = document.getElementById("showResultBtn");
+const resultWordEl = document.getElementById("resultWord");
+const resultImpostorWordEl = document.getElementById("resultImpostorWord");
 
-const base = {
-  width: 800,
-  height: 400,
-  groundOffset: 50,
-  ballRadius: 18,
-  ballX: 120,
-  gravity: 1800,
-  jumpVelocity: -650,
-  obstacleSpeed: 260,
-  obstacleWidth: [24, 48],
-  obstacleHeight: [35, 90],
-  spawnGap: [180, 320],
-};
+const STORAGE_KEY = "impostor-state-v1";
+let connectionInitialized = false;
 
-const world = {
-  width: base.width,
-  height: base.height,
-  groundY: base.height - base.groundOffset,
-};
-
-const ball = {
-  radius: base.ballRadius,
-  x: base.ballX,
-  y: world.groundY - base.ballRadius,
-  vy: 0,
-};
-
-const physics = {
-  gravity: base.gravity,
-  jumpVelocity: base.jumpVelocity,
-  obstacleSpeed: base.obstacleSpeed,
+const wordPairs = {
+  sehirler: ["Istanbul", "Izmir"],
+  film: ["Marvel", "DC"],
+  spor: ["Futbol", "Basketbol"],
+  yemek: ["Pizza", "Lahmacun"],
+  marka: ["Nike", "Adidas"],
 };
 
 const state = {
-  running: true,
-  score: 0,
-  best: 0,
+  screen: "home",
+  playerCount: 7,
+  category: "sehirler",
+  roundTime: 60,
+  roomCode: "",
+  secretWord: "",
+  impostorWord: "",
+  wordCategory: "",
+  wordShown: false,
+  voteLocked: false,
+  clueStart: null,
 };
 
-let scale = 1;
-let obstacle = null;
-let lastTime = 0;
+let clueTimerHandle = null;
+let activeScreen = "home";
 
-function rand(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function updatePauseLabel() {
-  pauseBtn.textContent = state.running ? "Duraklat" : "Devam";
-  pauseBtn.setAttribute("aria-pressed", state.running ? "false" : "true");
-}
-
-function applyScale() {
-  world.groundY = world.height - base.groundOffset * scale;
-  ball.radius = base.ballRadius * scale;
-  ball.x = base.ballX * scale;
-  physics.gravity = base.gravity * scale;
-  physics.jumpVelocity = base.jumpVelocity * scale;
-  physics.obstacleSpeed = base.obstacleSpeed * scale;
-}
-
-function resizeCanvas() {
-  const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  const displayWidth = rect.width || base.width;
-  const displayHeight = rect.height || displayWidth / 2;
-
-  canvas.width = Math.round(displayWidth * dpr);
-  canvas.height = Math.round(displayHeight * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  world.width = displayWidth;
-  world.height = displayHeight;
-  scale = displayWidth / base.width;
-  applyScale();
-  resetPositions();
-}
-
-function isOnGround() {
-  return ball.y >= world.groundY - ball.radius - 0.5;
-}
-
-function createObstacle() {
-  const width = rand(base.obstacleWidth[0], base.obstacleWidth[1]) * scale;
-  const height = rand(base.obstacleHeight[0], base.obstacleHeight[1]) * scale;
-  return {
-    x: world.width + rand(base.spawnGap[0], base.spawnGap[1]) * scale,
-    y: world.groundY - height,
-    width,
-    height,
-  };
-}
-
-function updateScore() {
-  scoreEl.textContent = state.score;
-  bestEl.textContent = state.best;
-}
-
-function resetPositions() {
-  ball.y = world.groundY - ball.radius;
-  ball.vy = 0;
-  obstacle = createObstacle();
-}
-
-function resetGame() {
-  state.score = 0;
-  state.running = true;
-  updatePauseLabel();
-  resetPositions();
-  updateScore();
-}
-
-function jump() {
-  if (!state.running) {
-    return;
-  }
-  if (isOnGround()) {
-    ball.vy = physics.jumpVelocity;
+function pulse() {
+  if (navigator.vibrate) {
+    navigator.vibrate(12);
   }
 }
 
-function togglePause() {
-  state.running = !state.running;
-  updatePauseLabel();
-  if (state.running) {
-    lastTime = performance.now();
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add("show");
+  window.clearTimeout(showToast._timer);
+  showToast._timer = window.setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2000);
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const saved = JSON.parse(raw);
+    Object.assign(state, saved);
+  } catch (error) {
+    localStorage.removeItem(STORAGE_KEY);
   }
 }
 
-function hitTestCircleRect(circle, rect) {
-  const closestX = clamp(circle.x, rect.x, rect.x + rect.width);
-  const closestY = clamp(circle.y, rect.y, rect.y + rect.height);
-  const dx = circle.x - closestX;
-  const dy = circle.y - closestY;
-  return dx * dx + dy * dy <= circle.radius * circle.radius;
+function updateScreenVisibility(target) {
+  screens.forEach((screen) => {
+    const isActive = screen.dataset.screen === target;
+    screen.classList.toggle("is-active", isActive);
+    screen.setAttribute("aria-hidden", isActive ? "false" : "true");
+  });
 }
 
-function update(dt) {
-  if (!state.running) {
-    return;
+function updateInputsFromState() {
+  playerCountInput.value = state.playerCount;
+  playerCountValue.textContent = state.playerCount;
+  roomCodeInput.value = state.roomCode;
+  categoryCards.forEach((card) => {
+    card.classList.toggle("is-active", card.dataset.category === state.category);
+  });
+  roundTimeChips.forEach((chip) => {
+    chip.classList.toggle("is-active", Number(chip.dataset.time) === state.roundTime);
+  });
+  resultWordEl.textContent = state.secretWord || resultWordEl.textContent;
+  resultImpostorWordEl.textContent =
+    state.impostorWord || resultImpostorWordEl.textContent;
+  clueTimer.textContent = state.roundTime.toString();
+  clueProgress.style.width = "0%";
+}
+
+function showScreen(target) {
+  if (activeScreen === target) return;
+  activeScreen = target;
+  state.screen = target;
+  updateScreenVisibility(target);
+  onScreenChange(target);
+  saveState();
+}
+
+function setWordPair(force = false) {
+  const shouldReplace =
+    force || !state.secretWord || state.wordCategory !== state.category;
+  if (shouldReplace) {
+    const pair = wordPairs[state.category] || ["Plaj", "Sahil"];
+    const [mainWord, impostorWord] = pair;
+    state.secretWord = mainWord;
+    state.impostorWord = impostorWord;
+    state.wordCategory = state.category;
+    state.wordShown = false;
   }
+  resultWordEl.textContent = state.secretWord;
+  resultImpostorWordEl.textContent = state.impostorWord;
+  secretWordEl.textContent = "••••";
+  revealWordBtn.disabled = state.wordShown;
+  readyBtn.disabled = !state.wordShown;
+}
 
-  ball.vy += physics.gravity * dt;
-  ball.y += ball.vy * dt;
+function getClueDuration() {
+  return state.roundTime * 1000;
+}
 
-  if (ball.y > world.groundY - ball.radius) {
-    ball.y = world.groundY - ball.radius;
-    ball.vy = 0;
+function startClueTimer() {
+  const duration = getClueDuration();
+  if (!state.clueStart || Date.now() - state.clueStart > duration) {
+    state.clueStart = Date.now();
   }
+  updateClueTimer();
+  clueTimerHandle = window.setInterval(updateClueTimer, 200);
+  saveState();
+}
 
-  obstacle.x -= physics.obstacleSpeed * dt;
-
-  if (obstacle.x + obstacle.width < 0) {
-    state.score += 1;
-    state.best = Math.max(state.best, state.score);
-    obstacle = createObstacle();
-    updateScore();
-  }
-
-  if (hitTestCircleRect(ball, obstacle)) {
-    resetGame();
+function stopClueTimer() {
+  if (clueTimerHandle) {
+    window.clearInterval(clueTimerHandle);
+    clueTimerHandle = null;
   }
 }
 
-function drawGround() {
-  ctx.strokeStyle = "#2a2a2a";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, world.groundY);
-  ctx.lineTo(world.width, world.groundY);
-  ctx.stroke();
-}
-
-function drawBall() {
-  ctx.fillStyle = "#ff3b3b";
-  ctx.beginPath();
-  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function drawObstacle() {
-  ctx.fillStyle = "#6d6d6d";
-  ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-}
-
-function drawPauseText() {
-  if (state.running) {
-    return;
+function updateClueTimer() {
+  const duration = getClueDuration();
+  const elapsed = Date.now() - state.clueStart;
+  const remaining = Math.max(0, duration - elapsed);
+  const seconds = Math.ceil(remaining / 1000);
+  clueTimer.textContent = seconds.toString();
+  const progress = Math.min(100, (elapsed / duration) * 100);
+  clueProgress.style.width = `${progress}%`;
+  if (remaining <= 0) {
+    stopClueTimer();
+    showToast("Sure bitti, tartismaya geciliyor.");
+    showScreen("chat");
   }
-  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-  ctx.fillRect(0, 0, world.width, world.height);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 28px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("Duraklatildi", world.width / 2, world.height / 2 - 10);
-  ctx.font = "16px Arial";
-  ctx.fillText(
-    "Devam icin P veya buton",
-    world.width / 2,
-    world.height / 2 + 20
-  );
 }
 
-function render() {
-  ctx.clearRect(0, 0, world.width, world.height);
-  drawGround();
-  drawObstacle();
-  drawBall();
-  drawPauseText();
+function onScreenChange(target) {
+  if (target === "clue") {
+    stopClueTimer();
+    startClueTimer();
+  } else {
+    stopClueTimer();
+    state.clueStart = null;
+  }
+
+  if (target === "secret") {
+    setWordPair();
+  }
+
+  if (target === "vote") {
+    state.voteLocked = false;
+    voteStatus.textContent =
+      "Tek dokunusla oy ver. Oy verdikten sonra kilitlenir.";
+    voteGrid
+      .querySelectorAll(".vote-card")
+      .forEach((card) => {
+        card.classList.remove("selected");
+        card.disabled = false;
+      });
+    showResultBtn.disabled = true;
+  }
+
+  if (target === "chat") {
+    window.requestAnimationFrame(() => {
+      chatList.scrollTop = chatList.scrollHeight;
+      chatInput.focus();
+    });
+  }
+
+  if (target === "join") {
+    window.requestAnimationFrame(() => {
+      roomCodeInput.focus();
+    });
+  }
+
+  if (target === "clue") {
+    window.requestAnimationFrame(() => {
+      clueInput.focus();
+    });
+  }
 }
 
-function loop(timestamp) {
-  const delta = Math.min((timestamp - lastTime) / 1000, 0.033);
-  lastTime = timestamp;
-  update(delta);
-  render();
-  requestAnimationFrame(loop);
+function sanitizeRoomCode(value) {
+  return value.replace(/\D/g, "").slice(0, 6);
 }
 
-document.addEventListener("keydown", (event) => {
-  if (event.code === "Space" || event.code === "ArrowUp") {
-    event.preventDefault();
-    jump();
-  }
-  if (event.code === "KeyP") {
-    togglePause();
-  }
-  if (event.code === "KeyR") {
-    resetGame();
-  }
-});
-
-canvas.addEventListener("pointerdown", (event) => {
-  event.preventDefault();
-  jump();
-});
-
-pauseBtn.addEventListener("click", () => {
-  togglePause();
-});
-
-resetBtn.addEventListener("click", () => {
-  resetGame();
-});
-
-let resizeHandle = 0;
-window.addEventListener("resize", () => {
-  if (resizeHandle) {
-    cancelAnimationFrame(resizeHandle);
-  }
-  resizeHandle = requestAnimationFrame(() => {
-    resizeCanvas();
+navButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (btn.dataset.haptic !== undefined) {
+      pulse();
+    }
+    showScreen(btn.dataset.nav);
   });
 });
 
-updatePauseLabel();
-resizeCanvas();
-updateScore();
-requestAnimationFrame(loop);
+playerCountInput.addEventListener("input", (event) => {
+  state.playerCount = Number(event.target.value);
+  playerCountValue.textContent = state.playerCount;
+  saveState();
+});
+
+categoryCards.forEach((card) => {
+  card.addEventListener("click", () => {
+    state.category = card.dataset.category;
+    categoryCards.forEach((item) => item.classList.remove("is-active"));
+    card.classList.add("is-active");
+    setWordPair();
+    saveState();
+  });
+});
+
+let swipeStartX = 0;
+let swipeActive = false;
+categoryStrip.addEventListener("pointerdown", (event) => {
+  swipeStartX = event.clientX;
+  swipeActive = true;
+});
+
+categoryStrip.addEventListener("pointerup", (event) => {
+  if (!swipeActive) return;
+  const delta = event.clientX - swipeStartX;
+  swipeActive = false;
+  if (Math.abs(delta) < 40) return;
+  const currentIndex = categoryCards.findIndex(
+    (card) => card.dataset.category === state.category
+  );
+  const direction = delta < 0 ? 1 : -1;
+  const nextIndex = Math.min(
+    categoryCards.length - 1,
+    Math.max(0, currentIndex + direction)
+  );
+  const nextCard = categoryCards[nextIndex];
+  if (nextCard) {
+    nextCard.click();
+    nextCard.scrollIntoView({ behavior: "smooth", inline: "center" });
+  }
+});
+
+categoryStrip.addEventListener("pointercancel", () => {
+  swipeActive = false;
+});
+
+roundTimeChips.forEach((chip) => {
+  chip.addEventListener("click", () => {
+    roundTimeChips.forEach((item) => item.classList.remove("is-active"));
+    chip.classList.add("is-active");
+    state.roundTime = Number(chip.dataset.time);
+    if (activeScreen !== "clue") {
+      clueTimer.textContent = state.roundTime.toString();
+      clueProgress.style.width = "0%";
+    }
+    saveState();
+  });
+});
+
+createRoomBtn.addEventListener("click", () => {
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  state.roomCode = code;
+  state.secretWord = "";
+  state.impostorWord = "";
+  state.wordCategory = state.category;
+  state.wordShown = false;
+  roomCodeInput.value = code;
+  saveState();
+  showToast(`Oda kodu hazir: ${code}`);
+});
+
+roomCodeInput.addEventListener("input", (event) => {
+  const clean = sanitizeRoomCode(event.target.value);
+  event.target.value = clean;
+  state.roomCode = clean;
+  saveState();
+});
+
+joinRoomBtn.addEventListener("click", () => {
+  pulse();
+  if (roomCodeInput.value.length < 4) {
+    showToast("Lutfen 4-6 haneli kod gir.");
+    return;
+  }
+  state.roomCode = roomCodeInput.value;
+  saveState();
+  showScreen("secret");
+});
+
+revealWordBtn.addEventListener("click", () => {
+  pulse();
+  if (state.wordShown) return;
+  state.wordShown = true;
+  secretWordEl.textContent = state.secretWord;
+  revealWordBtn.disabled = true;
+  readyBtn.disabled = false;
+  saveState();
+  window.setTimeout(() => {
+    secretWordEl.textContent = "••••";
+  }, 2500);
+});
+
+readyBtn.addEventListener("click", () => {
+  pulse();
+  showScreen("clue");
+});
+
+emojiBar.addEventListener("click", (event) => {
+  const emoji = event.target.dataset.emoji;
+  if (!emoji) return;
+  clueInput.value += emoji;
+  clueInput.focus();
+});
+
+sendClueBtn.addEventListener("click", () => {
+  pulse();
+  const value = clueInput.value.trim();
+  if (!value) return;
+  const card = document.createElement("div");
+  card.className = "clue-card";
+  card.textContent = `"${value}"`;
+  clueList.prepend(card);
+  clueInput.value = "";
+});
+
+chatForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  pulse();
+  const value = chatInput.value.trim();
+  if (!value) return;
+  const message = document.createElement("div");
+  message.className = "message right";
+  message.innerHTML = `<p class="meta">Sen</p><p>${value}</p>`;
+  chatList.appendChild(message);
+  chatInput.value = "";
+  chatList.scrollTop = chatList.scrollHeight;
+});
+
+voteGrid.addEventListener("click", (event) => {
+  const card = event.target.closest(".vote-card");
+  if (!card || state.voteLocked) return;
+  pulse();
+  state.voteLocked = true;
+  voteGrid.querySelectorAll(".vote-card").forEach((item) => {
+    item.disabled = true;
+    item.classList.remove("selected");
+  });
+  card.classList.add("selected");
+  voteStatus.textContent = `Oyun kilitlendi. Oyuncu: ${card.dataset.player}`;
+  showResultBtn.disabled = false;
+});
+
+function updateConnection() {
+  const online = navigator.onLine;
+  connectionStatus.textContent = online ? "Online" : "Baglanti Zayif";
+  connectionStatus.classList.toggle("offline", !online);
+  if (connectionInitialized) {
+    if (!online) {
+      showToast("Baglanti kesildi, yeniden baglaniyor...");
+    } else {
+      showToast("Baglanti geri geldi.");
+    }
+  }
+  connectionInitialized = true;
+}
+
+window.addEventListener("online", updateConnection);
+window.addEventListener("offline", updateConnection);
+
+function registerServiceWorker() {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  }
+}
+
+loadState();
+if (!screens.find((screen) => screen.dataset.screen === state.screen)) {
+  state.screen = "home";
+}
+updateInputsFromState();
+updateScreenVisibility(state.screen);
+activeScreen = state.screen;
+onScreenChange(state.screen);
+updateConnection();
+registerServiceWorker();

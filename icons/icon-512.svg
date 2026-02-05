@@ -1,0 +1,22 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+  role="img"
+  aria-label="Impostor Kelime Oyunu"
+>
+  <rect width="512" height="512" rx="96" fill="#101014" />
+  <circle cx="256" cy="256" r="190" fill="#FF4D5A" />
+  <text
+    x="50%"
+    y="55%"
+    text-anchor="middle"
+    font-family="Arial, sans-serif"
+    font-size="132"
+    font-weight="700"
+    fill="#101014"
+  >
+    IMP
+  </text>
+</svg>

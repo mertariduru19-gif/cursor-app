@@ -2,31 +2,362 @@
 <html lang="tr">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ziplayan Kirmizi Top</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Impostor Kelime Oyunu</title>
+    <meta
+      name="description"
+      content="TikTok'ta viral olan Impostor Kelime Oyunu icin mobil-oncelikli PWA."
+    />
+    <meta name="theme-color" content="#101014" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icons/icon-192.svg" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <main class="container">
-      <h1>Ziplayan Kirmizi Top</h1>
-      <p class="subtitle">Dokun veya Space ile zipla. Engellere carpma.</p>
-      <section class="hud" aria-live="polite">
-        <div>Skor: <span id="score">0</span></div>
-        <div>En Iyi: <span id="best">0</span></div>
-        <div class="hud-actions">
-          <button id="pause" type="button" aria-pressed="false">Duraklat</button>
-          <button id="reset" type="button">Sifirla</button>
+    <div class="app" id="app">
+      <div class="ambient" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">IMP</div>
+          <div>
+            <p class="brand-title">Impostor Kelime Oyunu</p>
+            <p class="brand-subtitle">10 saniyede oyuna gir, tek elle oyna.</p>
+          </div>
         </div>
-      </section>
-      <canvas
-        id="game"
-        width="800"
-        height="400"
-        role="img"
-        aria-label="Basit ziplayan kirmizi top oyunu"
-      ></canvas>
-      <p class="hint">Duraklat: buton veya P. Sifirla: buton veya R.</p>
-    </main>
+        <div class="status" id="connectionStatus">Online</div>
+      </header>
+
+      <main class="screens" role="main">
+        <section class="screen is-active" data-screen="home" aria-labelledby="home-title">
+          <div class="hero">
+            <p class="tag">Mobil-First PWA</p>
+            <h1 id="home-title">Impostor Kelime Oyunu</h1>
+            <p class="hero-subtitle">
+              TikTok'tan geldin, 10 saniyede oyuna gir. Tek ekranda tek aksiyon.
+            </p>
+          </div>
+          <div class="cta-stack">
+            <button class="btn primary" data-nav="create" data-haptic>
+              Oda Olustur
+            </button>
+            <button class="btn ghost" data-nav="join" data-haptic>
+              Odaya Katil
+            </button>
+          </div>
+          <div class="mini-cards">
+            <div class="mini-card">
+              <p class="mini-title">Dikey Oyun</p>
+              <p class="mini-text">Portrait kilitli, thumb-friendly.</p>
+            </div>
+            <div class="mini-card">
+              <p class="mini-title">Hizli Giris</p>
+              <p class="mini-text">Minimum istek, hizli yuklenme.</p>
+            </div>
+            <div class="mini-card">
+              <p class="mini-title">Haptik</p>
+              <p class="mini-text">Desteklenen cihazlarda vibrasyon.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="create" aria-labelledby="create-title">
+          <div class="screen-header">
+            <button class="icon-btn" data-nav="home" aria-label="Geri"></button>
+            <h2 id="create-title">Oda Olustur</h2>
+            <span class="pill">1/6</span>
+          </div>
+          <div class="form-card">
+            <label class="field">
+              <span>Oyuncu sayisi</span>
+              <div class="range-wrap">
+                <input
+                  id="playerCount"
+                  type="range"
+                  min="4"
+                  max="12"
+                  step="1"
+                  value="7"
+                />
+                <div class="range-value">
+                  <span id="playerCountValue">7</span> kisi
+                </div>
+              </div>
+            </label>
+
+            <div class="field">
+              <span>Kategori</span>
+              <div class="category-strip" id="categoryStrip">
+                <button class="category-card is-active" data-category="sehirler">
+                  Sehirler
+                </button>
+                <button class="category-card" data-category="film">
+                  Film & Dizi
+                </button>
+                <button class="category-card" data-category="spor">
+                  Spor
+                </button>
+                <button class="category-card" data-category="yemek">
+                  Yemek
+                </button>
+                <button class="category-card" data-category="marka">
+                  Markalar
+                </button>
+              </div>
+              <p class="field-hint">Kartlari kaydir, yukari kaydirma.</p>
+            </div>
+
+            <div class="field">
+              <span>Tur suresi</span>
+              <div class="chips" id="roundTimeChips">
+                <button class="chip" data-time="45">45 sn</button>
+                <button class="chip is-active" data-time="60">60 sn</button>
+                <button class="chip" data-time="90">90 sn</button>
+              </div>
+            </div>
+          </div>
+          <div class="sticky-action">
+            <button class="btn primary" id="createRoomBtn" data-nav="join" data-haptic>
+              Odayi Olustur
+            </button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="join" aria-labelledby="join-title">
+          <div class="screen-header">
+            <button class="icon-btn" data-nav="home" aria-label="Geri"></button>
+            <h2 id="join-title">Odaya Katil</h2>
+            <span class="pill">2/6</span>
+          </div>
+          <div class="form-card">
+            <label class="field">
+              <span>Oda kodu</span>
+              <input
+                id="roomCode"
+                class="code-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="6"
+                placeholder="123456"
+              />
+            </label>
+            <button class="btn primary" id="joinRoomBtn" data-haptic>
+              Katil
+            </button>
+          </div>
+
+          <div class="player-list" aria-live="polite">
+            <div class="player-card">
+              <div class="avatar">A</div>
+              <div class="player-info">
+                <p class="player-name">Arda</p>
+                <p class="player-status">Host</p>
+              </div>
+              <span class="badge">Hazir</span>
+            </div>
+            <div class="player-card">
+              <div class="avatar">B</div>
+              <div class="player-info">
+                <p class="player-name">Buse</p>
+                <p class="player-status">Baglandi</p>
+              </div>
+              <span class="badge">Bekliyor</span>
+            </div>
+            <div class="player-card">
+              <div class="avatar">C</div>
+              <div class="player-info">
+                <p class="player-name">Cenk</p>
+                <p class="player-status">Baglandi</p>
+              </div>
+              <span class="badge">Bekliyor</span>
+            </div>
+          </div>
+
+          <div class="hint-card">
+            <p>Kodu arkadaslarinla paylas, herkes katilinca baslat.</p>
+          </div>
+        </section>
+
+        <section class="screen secret" data-screen="secret" aria-labelledby="secret-title">
+          <div class="screen-header">
+            <button class="icon-btn" data-nav="join" aria-label="Geri"></button>
+            <h2 id="secret-title">Kelime Dagitimi</h2>
+            <span class="pill">3/6</span>
+          </div>
+          <div class="secret-overlay">
+            <p class="warning">Telefonunu kimseye gosterme.</p>
+            <div class="word-card">
+              <p class="word-label">Kelimen</p>
+              <div class="secret-word" id="secretWord">••••</div>
+            </div>
+            <button class="btn primary" id="revealWordBtn" data-haptic>
+              Kelimeyi Goster
+            </button>
+            <button class="btn ghost" id="readyBtn" data-haptic disabled>
+              Hazirim
+            </button>
+            <p class="note">Kelime 1 kez gosterilir.</p>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="clue" aria-labelledby="clue-title">
+          <div class="screen-header">
+            <button class="icon-btn" data-nav="secret" aria-label="Geri"></button>
+            <h2 id="clue-title">Ipucu Ver</h2>
+            <span class="pill">4/6</span>
+          </div>
+          <div class="progress">
+            <div class="progress-bar" id="clueProgress"></div>
+          </div>
+          <div class="timer" id="clueTimer">60</div>
+
+          <div class="form-card">
+            <label class="field">
+              <span>Ipucunu yaz</span>
+              <textarea
+                id="clueInput"
+                rows="2"
+                placeholder="Kelimeyi ele vermeden ipucu yaz..."
+              ></textarea>
+            </label>
+          </div>
+
+          <div class="clue-list" id="clueList">
+            <div class="clue-card">"Sicak ve kalabalik."</div>
+            <div class="clue-card">"Yaz tatili hissi."</div>
+          </div>
+
+          <div class="bottom-sheet">
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <p class="sheet-title">Hizli aksiyon</p>
+            <div class="emoji-bar" id="emojiBar">
+              <button data-emoji="🔥" aria-label="Alev">🔥</button>
+              <button data-emoji="🎯" aria-label="Hedef">🎯</button>
+              <button data-emoji="🧩" aria-label="Bulmaca">🧩</button>
+              <button data-emoji="⚡" aria-label="Hizli">⚡</button>
+              <button data-emoji="❓" aria-label="Soru">❓</button>
+            </div>
+            <button class="btn primary" id="sendClueBtn" data-haptic>
+              Ipucu Gonder
+            </button>
+          </div>
+        </section>
+
+        <section class="screen chat" data-screen="chat" aria-labelledby="chat-title">
+          <div class="screen-header">
+            <button class="icon-btn" data-nav="clue" aria-label="Geri"></button>
+            <h2 id="chat-title">Tartisma</h2>
+            <span class="pill">5/6</span>
+          </div>
+          <div class="chat-list" id="chatList" aria-live="polite">
+            <div class="message left">
+              <p class="meta">Arda</p>
+              <p>Herkes ipucunu verdi mi?</p>
+            </div>
+            <div class="message right">
+              <p class="meta">Sen</p>
+              <p>Ben hazirim, bana gore kelime sahil gibi.</p>
+            </div>
+            <div class="message left">
+              <p class="meta">Buse</p>
+              <p>Bence biri cok genel konusuyor.</p>
+            </div>
+          </div>
+          <form class="chat-input" id="chatForm">
+            <input
+              id="chatInput"
+              type="text"
+              placeholder="Mesaj yaz..."
+              autocomplete="off"
+            />
+            <button class="btn primary" type="submit" data-haptic>Gonder</button>
+          </form>
+          <div class="sticky-action">
+            <button class="btn ghost" data-nav="vote" data-haptic>
+              Oylamaya Gec
+            </button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="vote" aria-labelledby="vote-title">
+          <div class="screen-header">
+            <button class="icon-btn" data-nav="chat" aria-label="Geri"></button>
+            <h2 id="vote-title">Oylama</h2>
+            <span class="pill">6/6</span>
+          </div>
+          <div class="vote-grid" id="voteGrid">
+            <button class="vote-card" data-player="Arda" data-haptic>
+              <span class="avatar">A</span>
+              <span class="vote-name">Arda</span>
+            </button>
+            <button class="vote-card" data-player="Buse" data-haptic>
+              <span class="avatar">B</span>
+              <span class="vote-name">Buse</span>
+            </button>
+            <button class="vote-card" data-player="Cenk" data-haptic>
+              <span class="avatar">C</span>
+              <span class="vote-name">Cenk</span>
+            </button>
+            <button class="vote-card" data-player="Deniz" data-haptic>
+              <span class="avatar">D</span>
+              <span class="vote-name">Deniz</span>
+            </button>
+          </div>
+          <p class="vote-note" id="voteStatus">
+            Tek dokunusla oy ver. Oy verdikten sonra kilitlenir.
+          </p>
+          <div class="sticky-action">
+            <button class="btn primary" id="showResultBtn" data-nav="result" data-haptic>
+              Sonuclari Goster
+            </button>
+          </div>
+        </section>
+
+        <section class="screen result" data-screen="result" aria-labelledby="result-title">
+          <div class="screen-header">
+            <button class="icon-btn" data-nav="home" aria-label="Ana sayfa"></button>
+            <h2 id="result-title">Sonuc</h2>
+            <span class="pill">Final</span>
+          </div>
+          <div class="result-hero">
+            <div class="confetti" aria-hidden="true"></div>
+            <h3>Kazanan: Masumlar</h3>
+            <p class="result-line">Impostor: Deniz</p>
+            <div class="word-reveal">
+              <p>Gercek kelime</p>
+              <strong id="resultWord">Istanbul</strong>
+            </div>
+            <div class="word-reveal muted">
+              <p>Impostor kelimesi</p>
+              <strong id="resultImpostorWord">Izmir</strong>
+            </div>
+          </div>
+          <div class="cta-stack">
+            <button class="btn primary" data-nav="create" data-haptic>
+              Tekrar Oyna
+            </button>
+            <button class="btn ghost" data-nav="home" data-haptic>
+              Yeni Oda
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <div class="rotate-lock" id="rotateLock" role="alert">
+        <p>Dikey modda oyna. Telefonunu cevir.</p>
+      </div>
+    </div>
     <script src="script.js"></script>
   </body>
 </html>
