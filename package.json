@@ -1,0 +1,23 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "Mobil-oncelikli, tek elle oynanabilen Impostor Kelime Oyunu icin tek sayfa PWA arayuzu. Giris, oda olusturma/katilma, gizli kelime, ipucu turu, tartisma, oylama ve sonuc ekranlarini hizli bir akista gosterir. Servis calisani ve manifest dosyasi ile \"Ana Ekrana Ekle\" deneyimi desteklenir.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mertariduru19-gif/cursor-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mertariduru19-gif/cursor-app/issues"
+  },
+  "homepage": "https://github.com/mertariduru19-gif/cursor-app#readme",
+  "dependencies": {
+    "ws": "^8.19.0"
+  }
+}
