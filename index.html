@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,20 +9,23 @@
   <body>
     <main class="container">
       <h1>Ziplayan Kirmizi Top</h1>
-      <p class="subtitle">Press Space or Click to jump. Avoid blocks.</p>
+      <p class="subtitle">Dokun veya Space ile zipla. Engellere carpma.</p>
       <section class="hud" aria-live="polite">
-        <div>Score: <span id="score">0</span></div>
-        <div>Best: <span id="best">0</span></div>
-        <button id="reset" type="button">Reset</button>
+        <div>Skor: <span id="score">0</span></div>
+        <div>En Iyi: <span id="best">0</span></div>
+        <div class="hud-actions">
+          <button id="pause" type="button" aria-pressed="false">Duraklat</button>
+          <button id="reset" type="button">Sifirla</button>
+        </div>
       </section>
       <canvas
         id="game"
         width="800"
         height="400"
         role="img"
-        aria-label="Simple red ball jumping game"
+        aria-label="Basit ziplayan kirmizi top oyunu"
       ></canvas>
-      <p class="hint">Tip: Press P to pause.</p>
+      <p class="hint">Duraklat: buton veya P. Sifirla: buton veya R.</p>
     </main>
     <script src="script.js"></script>
   </body>

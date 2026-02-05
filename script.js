@@ -3,25 +3,40 @@ const ctx = canvas.getContext("2d");
 
 const scoreEl = document.getElementById("score");
 const bestEl = document.getElementById("best");
+const pauseBtn = document.getElementById("pause");
 const resetBtn = document.getElementById("reset");
 
+const base = {
+  width: 800,
+  height: 400,
+  groundOffset: 50,
+  ballRadius: 18,
+  ballX: 120,
+  gravity: 1800,
+  jumpVelocity: -650,
+  obstacleSpeed: 260,
+  obstacleWidth: [24, 48],
+  obstacleHeight: [35, 90],
+  spawnGap: [180, 320],
+};
+
 const world = {
-  width: canvas.width,
-  height: canvas.height,
-  groundY: canvas.height - 50,
+  width: base.width,
+  height: base.height,
+  groundY: base.height - base.groundOffset,
 };
 
 const ball = {
-  radius: 18,
-  x: 120,
-  y: world.groundY - 18,
+  radius: base.ballRadius,
+  x: base.ballX,
+  y: world.groundY - base.ballRadius,
   vy: 0,
 };
 
 const physics = {
-  gravity: 1800,
-  jumpVelocity: -650,
-  obstacleSpeed: 260,
+  gravity: base.gravity,
+  jumpVelocity: base.jumpVelocity,
+  obstacleSpeed: base.obstacleSpeed,
 };
 
 const state = {
@@ -30,7 +45,8 @@ const state = {
   best: 0,
 };
 
-let obstacle = createObstacle();
+let scale = 1;
+let obstacle = null;
 let lastTime = 0;
 
 function rand(min, max) {
@@ -41,15 +57,46 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function updatePauseLabel() {
+  pauseBtn.textContent = state.running ? "Duraklat" : "Devam";
+  pauseBtn.setAttribute("aria-pressed", state.running ? "false" : "true");
+}
+
+function applyScale() {
+  world.groundY = world.height - base.groundOffset * scale;
+  ball.radius = base.ballRadius * scale;
+  ball.x = base.ballX * scale;
+  physics.gravity = base.gravity * scale;
+  physics.jumpVelocity = base.jumpVelocity * scale;
+  physics.obstacleSpeed = base.obstacleSpeed * scale;
+}
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const displayWidth = rect.width || base.width;
+  const displayHeight = rect.height || displayWidth / 2;
+
+  canvas.width = Math.round(displayWidth * dpr);
+  canvas.height = Math.round(displayHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  world.width = displayWidth;
+  world.height = displayHeight;
+  scale = displayWidth / base.width;
+  applyScale();
+  resetPositions();
+}
+
 function isOnGround() {
   return ball.y >= world.groundY - ball.radius - 0.5;
 }
 
 function createObstacle() {
-  const width = rand(24, 48);
-  const height = rand(35, 90);
+  const width = rand(base.obstacleWidth[0], base.obstacleWidth[1]) * scale;
+  const height = rand(base.obstacleHeight[0], base.obstacleHeight[1]) * scale;
   return {
-    x: world.width + rand(180, 320),
+    x: world.width + rand(base.spawnGap[0], base.spawnGap[1]) * scale,
     y: world.groundY - height,
     width,
     height,
@@ -61,11 +108,17 @@ function updateScore() {
   bestEl.textContent = state.best;
 }
 
-function resetGame() {
-  state.score = 0;
+function resetPositions() {
   ball.y = world.groundY - ball.radius;
   ball.vy = 0;
   obstacle = createObstacle();
+}
+
+function resetGame() {
+  state.score = 0;
+  state.running = true;
+  updatePauseLabel();
+  resetPositions();
   updateScore();
 }
 
@@ -80,6 +133,10 @@ function jump() {
 
 function togglePause() {
   state.running = !state.running;
+  updatePauseLabel();
+  if (state.running) {
+    lastTime = performance.now();
+  }
 }
 
 function hitTestCircleRect(circle, rect) {
@@ -147,9 +204,13 @@ function drawPauseText() {
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 28px Arial";
   ctx.textAlign = "center";
-  ctx.fillText("Paused", world.width / 2, world.height / 2 - 10);
+  ctx.fillText("Duraklatildi", world.width / 2, world.height / 2 - 10);
   ctx.font = "16px Arial";
-  ctx.fillText("Press P to resume", world.width / 2, world.height / 2 + 20);
+  ctx.fillText(
+    "Devam icin P veya buton",
+    world.width / 2,
+    world.height / 2 + 20
+  );
 }
 
 function render() {
@@ -181,13 +242,30 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-canvas.addEventListener("pointerdown", () => {
+canvas.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
   jump();
+});
+
+pauseBtn.addEventListener("click", () => {
+  togglePause();
 });
 
 resetBtn.addEventListener("click", () => {
   resetGame();
 });
 
+let resizeHandle = 0;
+window.addEventListener("resize", () => {
+  if (resizeHandle) {
+    cancelAnimationFrame(resizeHandle);
+  }
+  resizeHandle = requestAnimationFrame(() => {
+    resizeCanvas();
+  });
+});
+
+updatePauseLabel();
+resizeCanvas();
 updateScore();
 requestAnimationFrame(loop);
