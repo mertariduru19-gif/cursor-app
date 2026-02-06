@@ -12,9 +12,12 @@ This repository hosts a Unity 2022 LTS project for a 2D isometric city builder +
 - Assets/Scripts/Core: ScriptableObjects and configs
 - Assets/Scripts/Game: Runtime systems (inventory, factories, save)
 - Assets/Scripts/Puzzle: Grid, road pieces, puzzle logic, isometric helpers
+- Assets/Scripts/UI: Runtime HUD builder
+- Assets/ScriptableObjects: GameConfig and sample data
+- Assets/Scenes: CityScene bootstrap
 
 ## Setup
 1. Open the project with Unity 2022.3 LTS.
-2. Create a GameConfig asset and define resources/factories.
-3. Add GameManager, ResourceInventory, and FactoryController to a scene.
-4. Wire PuzzleController and PuzzleRewarder to connect puzzles to upgrades.
+2. Open **Assets/Scenes/CityScene.unity**.
+3. Inspect **Assets/ScriptableObjects/GameConfig.asset** and tweak values.
+4. Press Play to see the runtime HUD and production ticking.

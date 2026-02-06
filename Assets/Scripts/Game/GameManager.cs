@@ -13,6 +13,11 @@ namespace CityPuzzle.Game
 
         private GameState state;
 
+        public GameConfig Config => config;
+        public ResourceInventory Inventory => inventory;
+        public FactoryController FactoryController => factoryController;
+        public int PlayerLevel => state != null ? state.PlayerLevel : 1;
+
         private void Awake()
         {
             if (config == null)
