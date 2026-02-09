@@ -3,29 +3,123 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ziplayan Kirmizi Top</title>
+    <title>Kum Firtinasi: Hayatta Kal</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="container">
-      <h1>Ziplayan Kirmizi Top</h1>
-      <p class="subtitle">Dokun veya Space ile zipla. Engellere carpma.</p>
-      <section class="hud" aria-live="polite">
-        <div>Skor: <span id="score">0</span></div>
-        <div>En Iyi: <span id="best">0</span></div>
-        <div class="hud-actions">
-          <button id="pause" type="button" aria-pressed="false">Duraklat</button>
-          <button id="reset" type="button">Sifirla</button>
+      <header class="header">
+        <h1>Kum Firtinasi: Hayatta Kal</h1>
+        <p class="subtitle">
+          Post-apokaliptik savas bolgesinde dalgalara karsi hayatta kal.
+        </p>
+      </header>
+
+      <section class="status-bar" aria-live="polite">
+        <div class="stat">Seviye <span id="player-level">1</span></div>
+        <div class="stat">XP <span id="player-xp">0/100</span></div>
+        <div class="stat">HP <span id="player-hp">0/0</span></div>
+        <div class="stat">Mermi <span id="player-ammo">0/0</span></div>
+        <div class="stat">Dalga <span id="wave">1</span></div>
+        <div class="stat">Dusman <span id="kills">0</span></div>
+        <div class="stat">Kredi <span id="credits">0</span></div>
+      </section>
+
+      <section class="panels">
+        <div class="panel">
+          <h2>Karakter</h2>
+          <div class="select-row">
+            <select id="character-select"></select>
+            <button id="unlock-character" type="button">Kilidi Ac</button>
+          </div>
+          <p id="character-info" class="panel-text"></p>
+        </div>
+
+        <div class="panel">
+          <h2>Silah</h2>
+          <div class="select-row">
+            <select id="weapon-select"></select>
+            <button id="unlock-weapon" type="button">Kilidi Ac</button>
+          </div>
+          <div class="action-row">
+            <button id="upgrade-weapon" type="button">Silahi Yukselt</button>
+            <div class="small">Seviye: <span id="weapon-level">1</span></div>
+          </div>
+          <div class="mod-row">
+            <button class="mod-btn" type="button" data-mod="fire">Alev</button>
+            <button class="mod-btn" type="button" data-mod="poison">Zehir</button>
+            <button class="mod-btn" type="button" data-mod="crit">Kritik</button>
+            <button class="mod-btn" type="button" data-mod="splash">Sok</button>
+          </div>
+          <p id="weapon-info" class="panel-text"></p>
+        </div>
+
+        <div class="panel">
+          <h2>Gorevler</h2>
+          <ul class="mission-list">
+            <li id="mission-main">-</li>
+            <li id="mission-daily">-</li>
+          </ul>
+          <div class="skill-wrap">
+            <div class="skill-title">Yetenek Agaci</div>
+            <div class="skill-row">
+              <span>Saldiri</span>
+              <span id="skill-damage">0</span>
+              <button class="skill-up" type="button" data-skill="damage">
+                +
+              </button>
+            </div>
+            <div class="skill-row">
+              <span>Hayatta</span>
+              <span id="skill-health">0</span>
+              <button class="skill-up" type="button" data-skill="health">
+                +
+              </button>
+            </div>
+            <div class="skill-row">
+              <span>Hiz</span>
+              <span id="skill-speed">0</span>
+              <button class="skill-up" type="button" data-skill="speed">+</button>
+            </div>
+            <div class="skill-points">
+              Puan: <span id="skill-points">0</span>
+            </div>
+          </div>
         </div>
       </section>
-      <canvas
-        id="game"
-        width="800"
-        height="400"
-        role="img"
-        aria-label="Basit ziplayan kirmizi top oyunu"
-      ></canvas>
-      <p class="hint">Duraklat: buton veya P. Sifirla: buton veya R.</p>
+
+      <section class="hud-actions">
+        <button id="start" type="button">Baslat</button>
+        <button id="pause" type="button" aria-pressed="false">Duraklat</button>
+        <button id="ability" type="button">Yetenek</button>
+        <button id="reset" type="button">Sifirla</button>
+      </section>
+
+      <div class="canvas-wrap">
+        <canvas
+          id="game"
+          width="900"
+          height="520"
+          role="img"
+          aria-label="Izometrik hayatta kalma arena savasi"
+        ></canvas>
+        <div id="overlay" class="overlay hidden">
+          <div class="overlay-card">
+            <h2 id="overlay-title">Baslatmak icin butona bas</h2>
+            <p id="overlay-subtitle"></p>
+            <div class="overlay-stats">
+              <div>Dalga: <span id="overlay-wave">0</span></div>
+              <div>Dusman: <span id="overlay-kills">0</span></div>
+              <div>Toplam kredi: <span id="overlay-credits">0</span></div>
+            </div>
+            <button id="restart" type="button">Tekrar Basla</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="hint">
+        Hareket: WASD veya sol joystik. Yetenek: Space veya buton.
+      </p>
     </main>
     <script src="script.js"></script>
   </body>
