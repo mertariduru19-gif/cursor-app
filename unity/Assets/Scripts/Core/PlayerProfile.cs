@@ -60,7 +60,9 @@ namespace Ashfall.Core
             {
                 if (weaponLevels[i].key == id)
                 {
-                    weaponLevels[i].value = level;
+                    var pair = weaponLevels[i];
+                    pair.value = level;
+                    weaponLevels[i] = pair;
                     return;
                 }
             }

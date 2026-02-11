@@ -69,7 +69,11 @@ namespace Ashfall.Combat
 
         private void Start()
         {
+#if UNITY_2022_2_OR_NEWER
+            player = FindFirstObjectByType<PlayerController>();
+#else
             player = FindObjectOfType<PlayerController>();
+#endif
         }
 
         private void Update()
