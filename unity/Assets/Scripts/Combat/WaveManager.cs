@@ -17,6 +17,9 @@ namespace Ashfall.Combat
         public List<EnemySpawnEntry> enemies = new List<EnemySpawnEntry>();
         public EnemySpawnEntry bossEntry;
         public Transform[] spawnPoints;
+    public float randomSpawnRadius = 8f;
+    public float randomSpawnJitter = 2f;
+    public float spawnHeight = 0f;
 
         public int wave = 1;
         public float difficultyFactor = 1f;
@@ -113,19 +116,29 @@ namespace Ashfall.Combat
         private void SpawnEnemy(EnemySpawnEntry entry)
         {
             if (entry == null || entry.prefab == null || entry.data == null) return;
-            Transform spawn = GetSpawnPoint();
-            var enemy = Instantiate(entry.prefab, spawn.position, Quaternion.identity);
+            Vector3 spawn = GetSpawnPoint();
+            var enemy = Instantiate(entry.prefab, spawn, Quaternion.identity);
             enemy.Initialize(entry.data, wave, difficultyFactor);
             enemy.OnDeath += HandleEnemyDeath;
         }
 
-        private Transform GetSpawnPoint()
+        private Vector3 GetSpawnPoint()
         {
-            if (spawnPoints == null || spawnPoints.Length == 0)
+            if (spawnPoints != null && spawnPoints.Length > 0)
             {
-                return transform;
+                return spawnPoints[Random.Range(0, spawnPoints.Length)].position;
             }
-            return spawnPoints[Random.Range(0, spawnPoints.Length)];
+
+            Vector2 dir = Random.insideUnitCircle;
+            if (dir.sqrMagnitude < 0.01f)
+            {
+                dir = Vector2.right;
+            }
+            dir.Normalize();
+
+            float radius = Mathf.Max(0f, randomSpawnRadius + Random.Range(-randomSpawnJitter, randomSpawnJitter));
+            Vector3 offset = new Vector3(dir.x, 0f, dir.y) * radius;
+            return transform.position + offset + Vector3.up * spawnHeight;
         }
 
         private void HandleEnemyDeath(EnemyController enemy)

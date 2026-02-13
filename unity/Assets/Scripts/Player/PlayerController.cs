@@ -9,6 +9,8 @@ namespace Ashfall.Player
         [Header("Movement")]
         public float moveSpeed = 4.5f;
         public VirtualJoystick joystick;
+    public bool rotateToMovement = true;
+    public float rotationSpeed = 12f;
 
         [Header("Health")]
         public float maxHp = 120f;
@@ -39,6 +41,15 @@ namespace Ashfall.Player
             if (move.sqrMagnitude > 0.001f)
             {
                 lastMoveDir = move.normalized;
+            if (rotateToMovement)
+            {
+                var targetRotation = Quaternion.LookRotation(lastMoveDir, Vector3.up);
+                transform.rotation = Quaternion.Slerp(
+                    transform.rotation,
+                    targetRotation,
+                    rotationSpeed * Time.deltaTime
+                );
+            }
             }
             controller.Move(move * moveSpeed * Time.deltaTime);
         }
