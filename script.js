@@ -3,6 +3,7 @@ const ctx = canvas.getContext("2d");
 
 const scoreEl = document.getElementById("score");
 const bestEl = document.getElementById("best");
+const nextGlassEl = document.getElementById("nextGlass");
 const glassCountEl = document.getElementById("glassCount");
 const stuckEl = document.getElementById("stuck");
 const restartBtn = document.getElementById("restart");
@@ -77,7 +78,8 @@ const state = {
   gameOver: false,
   stuckTime: 0,
   lastTick: 0,
-  spawnTimer: 0.8,
+  nextLevel: 0,
+  activeGlassId: null,
   nextGlassId: 1,
 };
 
@@ -99,6 +101,7 @@ const pointer = {
   prevT: 0,
   impulseX: 0,
   impulseY: 0,
+  controlsActive: false,
 };
 
 function rand(min, max) {
@@ -127,6 +130,17 @@ function toCanvasPoint(event) {
 
 function levelData(level) {
   return LEVELS[clamp(level, 0, LEVELS.length - 1)];
+}
+
+function rollNextLevel() {
+  const r = Math.random();
+  if (r < 0.68) {
+    return 0;
+  }
+  if (r < 0.92) {
+    return 1;
+  }
+  return 2;
 }
 
 function createGlass(level, x, y) {
@@ -178,36 +192,65 @@ function tryFindSpawnPoint(level, fromTop = true) {
   return null;
 }
 
-function spawnGlass(level = 0) {
-  const fromTop = Math.random() < 0.6;
-  const point = tryFindSpawnPoint(level, fromTop);
+function spawnGlass(level = 0, fromTop = null) {
+  const useTop = fromTop === null ? Math.random() < 0.6 : fromTop;
+  const point = tryFindSpawnPoint(level, useTop);
   if (!point) {
-    return false;
+    return null;
   }
   const glass = createGlass(level, point.x, point.y);
-  if (fromTop) {
+  if (useTop) {
     glass.vy += rand(120, 190);
   }
   glasses.push(glass);
+  return glass;
+}
+
+function spawnTurnGlass() {
+  if (state.gameOver) {
+    return false;
+  }
+  const level = state.nextLevel;
+  const spawned = spawnGlass(level, true) || spawnGlass(level, false);
+  if (!spawned) {
+    state.activeGlassId = null;
+    return false;
+  }
+  state.activeGlassId = spawned.id;
+  state.nextLevel = rollNextLevel();
   return true;
 }
 
 function updateHud() {
-  scoreEl.textContent = String(state.score);
-  bestEl.textContent = String(state.best);
-  glassCountEl.textContent = String(glasses.length);
-  stuckEl.textContent = state.stuckTime.toFixed(1);
+  if (scoreEl) {
+    scoreEl.textContent = String(state.score);
+  }
+  if (bestEl) {
+    bestEl.textContent = String(state.best);
+  }
+  if (nextGlassEl) {
+    nextGlassEl.textContent = levelData(state.nextLevel).name;
+  }
+  if (glassCountEl) {
+    glassCountEl.textContent = String(glasses.length);
+  }
+  if (stuckEl) {
+    stuckEl.textContent = state.stuckTime.toFixed(1);
+  }
 }
 
 function resetGame() {
   state.score = 0;
   state.gameOver = false;
   state.stuckTime = 0;
-  state.spawnTimer = 0.7;
+  state.nextLevel = rollNextLevel();
+  state.activeGlassId = null;
   glasses = [];
-  for (let i = 0; i < 6; i += 1) {
-    spawnGlass(0);
-  }
+  pointer.active = false;
+  pointer.id = null;
+  pointer.glassId = null;
+  pointer.controlsActive = false;
+  spawnTurnGlass();
   updateHud();
 }
 
@@ -243,6 +286,7 @@ function onPointerDown(event) {
   pointer.impulseY = 0;
   const picked = findTopGlassAt(p.x, p.y);
   pointer.glassId = picked ? picked.id : null;
+  pointer.controlsActive = Boolean(picked && picked.id === state.activeGlassId);
   canvas.setPointerCapture(event.pointerId);
 }
 
@@ -268,6 +312,7 @@ function releasePointer(event) {
   if (!pointer.active || event.pointerId !== pointer.id) {
     return;
   }
+  const droppedActive = pointer.controlsActive;
   const held = glasses.find((g) => g.id === pointer.glassId);
   if (held) {
     held.vx += pointer.impulseX * 0.08;
@@ -276,6 +321,12 @@ function releasePointer(event) {
   pointer.active = false;
   pointer.id = null;
   pointer.glassId = null;
+  pointer.controlsActive = false;
+
+  if (droppedActive) {
+    state.activeGlassId = null;
+    spawnTurnGlass();
+  }
 }
 
 function solveBoundary(g) {
@@ -396,7 +447,12 @@ function anyGlassMoving() {
 }
 
 function isBoardBlocked() {
-  const noSpawnRoom = !tryFindSpawnPoint(0, false) && !tryFindSpawnPoint(0, true);
+  if (state.activeGlassId !== null) {
+    return false;
+  }
+  const noSpawnRoom =
+    !tryFindSpawnPoint(state.nextLevel, false) &&
+    !tryFindSpawnPoint(state.nextLevel, true);
   return noSpawnRoom && !anyGlassMoving() && !hasMergeOpportunity() && !pointer.active;
 }
 
@@ -406,7 +462,7 @@ function update(dt) {
   }
 
   const held =
-    pointer.active && pointer.glassId
+    pointer.active && pointer.controlsActive && pointer.glassId
       ? glasses.find((g) => g.id === pointer.glassId) || null
       : null;
 
@@ -476,10 +532,12 @@ function update(dt) {
     mergeGlasses(a, b);
   }
 
-  state.spawnTimer -= dt;
-  if (state.spawnTimer <= 0) {
-    spawnGlass(0);
-    state.spawnTimer = rand(1.15, 1.95);
+  if (state.activeGlassId !== null) {
+    const activeStillExists = glasses.some((g) => g.id === state.activeGlassId);
+    if (!activeStillExists) {
+      state.activeGlassId = null;
+      spawnTurnGlass();
+    }
   }
 
   if (isBoardBlocked()) {
@@ -526,6 +584,14 @@ function drawGlass(g) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
+  if (g.id === state.activeGlassId) {
+    ctx.strokeStyle = "rgba(255, 214, 77, 0.95)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(g.x, g.y, g.radius + 4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -538,9 +604,10 @@ function drawFloatingInfo() {
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.font = "bold 15px Arial";
-  ctx.fillText("Swipe & Merge", 18, 16);
+  ctx.fillText("Swipe & Merge (Sira Bazli)", 18, 16);
   ctx.font = "13px Arial";
-  ctx.fillText("Ayni tag/ID seviyesi temas edince bir ust seviyeye birlesir.", 18, 36);
+  ctx.fillText("Aktif kadehi masada surukle ve birak, sonra siradaki gelir.", 18, 36);
+  ctx.fillText(`Siradaki: ${levelData(state.nextLevel).name}`, 18, 54);
 }
 
 function drawGameOver() {
@@ -591,9 +658,11 @@ canvas.addEventListener("pointermove", onPointerMove);
 canvas.addEventListener("pointerup", releasePointer);
 canvas.addEventListener("pointercancel", releasePointer);
 
-restartBtn.addEventListener("click", () => {
-  resetGame();
-});
+if (restartBtn) {
+  restartBtn.addEventListener("click", () => {
+    resetGame();
+  });
+}
 
 document.addEventListener("keydown", (event) => {
   if (event.code === "KeyR") {
