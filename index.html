@@ -3,29 +3,40 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ziplayan Kirmizi Top</title>
+    <title>Juice Merge Prototipi</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="container">
-      <h1>Ziplayan Kirmizi Top</h1>
-      <p class="subtitle">Dokun veya Space ile zipla. Engellere carpma.</p>
+      <h1>Juice Merge</h1>
+      <p class="subtitle">
+        Kadehleri surukle, ayni seviyeyi birlestir, daha buyuk iceceklere ulas.
+      </p>
       <section class="hud" aria-live="polite">
-        <div>Skor: <span id="score">0</span></div>
+        <div>Puan: <span id="score">0</span></div>
         <div>En Iyi: <span id="best">0</span></div>
+        <div>Toplam Kadeh: <span id="glassCount">0</span></div>
+        <div>Kilitlenme: <span id="stuck">0.0</span>s</div>
         <div class="hud-actions">
-          <button id="pause" type="button" aria-pressed="false">Duraklat</button>
-          <button id="reset" type="button">Sifirla</button>
+          <button id="restart" type="button">Yeniden Baslat</button>
         </div>
       </section>
       <canvas
         id="game"
         width="800"
-        height="400"
+        height="520"
         role="img"
-        aria-label="Basit ziplayan kirmizi top oyunu"
+        aria-label="Juice Merge 2D prototipi"
       ></canvas>
-      <p class="hint">Duraklat: buton veya P. Sifirla: buton veya R.</p>
+      <p class="hint">
+        Kontrol: Kadehin ustune dokun ve surukle. Ayni tag/ID seviyesindeki iki
+        kadeh carpinca bir ust seviyeye birlesir.
+      </p>
+      <p class="hint">
+        Seviye Sirasi: Su - Portakal Suyu - Limonata - Cilekli Kokteyl -
+        Karpuz Suyu - Elma Suyu - Mavi Icecek - Tropik Mix - Enerji Icecegi -
+        Altin Oz
+      </p>
     </main>
     <script src="script.js"></script>
   </body>
